@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+		<meta charset="utf-8">
+		<title>Selection API</title>
+		<script src="selection-utils.min.js"></script>
+		<style>
+		body {
+			width:75%;
+			margin:0 auto;
+			background-color:#fefefe;
+			font-family:"Trebuchet MS", sans-serif;
+			box-shadow:0 0 80px rgba(0, 0, 0, 0.25);
+			padding:40px;
+		}
+		html {
+			scroll-behavior:smooth;
+		}
+		h1 {
+			text-align:center;
+		}
+		#getSelectedTextDemo {
+			resize:none;
+			width:100%;
+			height:50px;
+		}
+		[contenteditable="true"] {
+			background-color:#eee;
+			padding:10px;
+			box-sizing:border-box;
+		}
+		</style>
+	</head>
+	<body>
+		<h1>Selection API</h1>
+		<hr>
+		<p>This is a small API I wrote to handle tasks related to selecting text. I see potential uses for it in a WYSIWYG style application, among other places.</p>
+		<h2>Contents</h2>
+		<ul>
+			<li><a href="#isAnythingSelected">Check if there is a Selection</a></li>
+			<li><a href="#isSelectionWithin">Check if there is a Selection within an Element</a></li>
+			<li><a href="#removeSelection">Remove a Selection</a></li>
+			<li><a href="#makeSelection">Make a Selection</a></li>
+			<li><a href="#getSelectionPosition">Get the position of an existing Selection</a></li>
+			<li><a href="#getSelectedText">Get the selected text</a></li>
+			<li><a href="#getParentTags">Get the tags surrounding a Selection</a></li>
+			<li><a href="#toggleHTMLWrapping">Wrap HTML around a Selection</a></li>
+			<li><a href="#clearFormatting">Clear Formatting</a></li>
+			<li><a href="#insertHTMLAtSelection">Insert HTML</a></li>
+			<li><a href="#events">Event Handling</a></li>
+		</ul>
+		<h2 id="isAnythingSelected">Check if there is a Selection</h2>
+		<code>SelectionUtils.isAnythingSelected(caretSelection = false)</code>
+		<p>The <code>isAnythingSelected</code> method will return <code>true</code> if something on the page is selected, and <code>false</code> if there is no selection.</p>
+		<p>The optional <code>caretSelection</code> argument is for dealing with caret selections (e.g. selections with a width of 0). By default it is <code>false</code>, which means that they do not count as selections, and thus that the method will return <code>false</code> even if there is a selection with a width of 0. However, if this argument is set to <code>true</code>, caret selections will be counted, and the method will return <code>true</code> if there is either a caret selection or a regular one.</p>
+		<p>In most scenarios, you will want to leave this as <code>false</code>.</p>
+		<p>Try it out by selecting some text on this page, and watching the following indicator change: <span id="selectionIndicator"></span></p>
+		<h2 id="isSelectionWithin">Check if there is a Selection within an Element</h2>
+		<code>SelectionUtils.isSelectionWithin(element, caretSelection = false)</code>
+		<p>The <code>isSelectionWithin</code> method will return <code>true</code> is there is a selection fully within a particular element. As with <code>isAnythingSelected</code>, if the optional <code>caretSelection</code> argument is <code>true</code> zero-width selections will be counted, otherwise they will not be. This is useful, because if you wanted to check that a contenteditable div has focus, then you can simply use this method: for it to have focus, it must at least have a caret selection.</p>
+		<p>Try it out by selecting text on this page vs only text in the paragraph below, and watch the following indicator: <span id="selectionIndicator2"></span></p>
+		<p id="isWithinPara">Select some text in this paragraph to see the indicator go green!</p>
+		<h2 id="removeSelection">Remove a Selection</h2>
+		<code>SelectionUtils.removeSelection()</code>
+		<p>This method simply deselects all text programmatically. For example, select text anywhere on this page, then click this button: <button onclick="SelectionUtils.removeSelection();">Deselect All</button></p>
+		<h2 id="makeSelection">Make a Selection</h2>
+		<code>SelectionUtils.makeSelection(element, firstPos, secondPos)</code>
+		<p>This method allows you to select text programmatically. <code>element</code> is the element to make the selection within. <code>firstPos</code> is the number of characters, from the start of the element, that you want the selection to start at. <code>secondPos</code> is the number of characters, from the start of the element, that you want the selection to end at.</p>
+		<p id="makeSelectionDemo">So, for example, to select the text "for example" at the beginning of this paragraph, we would say <code>SelectionUtils.makeSelection(paragraph, 4, 15)</code>. There are two quirks here: the first character is 0, not one, and the last character is actually not inclusive, so we need to add one at the end of <code>secondPos</code> count. Try it out by clicking this button: <button onclick="SelectionUtils.makeSelection(document.getElementById('makeSelectionDemo'), 4, 15)">Select "for example"</button></p>
+		<p>Note: with a contenteditable element, you can set the <code>firstPos</code> and <code>secondPos</code> arguments to the same value to move the caret.</p>
+		<h2 id="getSelectionPosition">Get the position of an existing Selection</h2>
+		<code>SelectionUtils.getSelectionPosition(element)</code>
+		<p>This method gets the start and end points of a selection, in terms of number of characters from the start of the given element. It is the counterpart to the <code>makeSelection</code> method. It returns an array with two values, the first being the <code>firstPos</code> value (in terms of <code>makeSelection</code>), and the second being <code>secondPos</code>. If the array is empty, there is either no selection, or the selection is not exclusively within the given element.</p>
+		<p id="getSelectionDemoIn">Try selecting some text in this paragraph, and watch the box below to see what this method returns. Notice that it works regardless of <em>mixed <strong>tags</strong></em>.</p>
+		<p><input type="text" readonly id="getSelectionDemoOut"></p>
+		<p id="restoreDemo">As a second demo, it is obvious that this method and <code>makeSelection</code> are designed to work together. Try selecting some text in this paragraph, click the "Save Selection" button, select something else, and then click the "Restore Selection" button to bring back the selection you had earlier.</p>
+		<button onclick="savedSelection=SelectionUtils.getSelectionPosition(document.getElementById('restoreDemo'));">Save Selection</button>
+		<button onclick="restore();">Restore Selection</button>
+		<h2 id="getSelectedText">Get the selected text</h2>
+		<code>SelectionUtils.getSelectedText()</code>
+		<p>The <code>getSelectedText</code> method gets the text currently selected in any element, stripped of any HTML. For example, select some text on this page, and watch the box below:</p>
+		<textarea readonly id="getSelectedTextDemo"></textarea>
+		<h2 id="getParentTags">Get the tags surrounding a Selection</h2>
+		<code>SelectionUtils.getParentTags()</code>
+		<p>This returns a list of all DOM nodes which the selection is fully nested inside of. It could be useful for a WYSIWYG editor, where you can light up the bold button if the user has some bold text selected, etc.</p>
+		<p>Try selecting some text on this page, and watch the box below. <strong>He<u>re's</u> some <u>text wi<em>th nes</em>ted</u> tags.</strong></p>
+		<input type="text" readonly id="getParentTagsDemo">
+		<h2 id="toggleHTMLWrapping">Wrap HTML around a Selection</h2>
+		<code>SelectionUtils.toggleHTMLWrapping(element, tagName, attributes = "", override = false)</code>
+		<p>This method is used to wrap HTML around a Selection, for example surrounding it in <code>&lt;b&gt;</code> tags to make it bold. Calling this function when the selection is already nested within the given tags will unwrap the selection from those tags, e.g. making it no longer bold.</p>
+		<ul>
+			<li><code>element</code> is the element the selection must be within - e.g. so you don't format text which is part of your UI.</li>
+			<li><code>tagName</code> is the name of the tag which the selection will be surrounded with.</li>
+			<li><code>attributes</code> is an optional argument which contains attributes for the tag to insert.</li>
+			<li><code>override</code> is an optional boolean argument, if <code>true</code> it will replace the element making up the selection, rather than toggling it off. This is good when the attributes play a role, e.g. when colouring text with <code>&lt;span&gt;</code> tags.</li>
+		</ul>
+		<p>If some of the text selected is already wrapped in the same tag, and some is not, executing this will wrap all of the text with that tag, rather than unwrap the text which is already wrapped.</p>
+		<p>The demo here behaves like a WYSIWYG editor with two buttons: one which makes the text bold (<code>SelectionUtils.toggleHTMLWrapping(editor, "B")</code>) and one which colours the text a random colour (<code>SelectionUtils.toggleHTMLWrapping(editor, "SPAN", 'style="color:#' + color + '"', true)</code>):</p>
+		<p><button onclick="SelectionUtils.toggleHTMLWrapping(document.getElementById('rte1'), 'B')">Bold</button> <button onclick="SelectionUtils.toggleHTMLWrapping(document.getElementById('rte1'), 'SPAN', `style='color:#${ Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}'`, false)">Color</button></p>
+		<div contenteditable="true" id="rte1">Try selecting some text in here and wrapping it in HTML with the buttons above...</div>
+		<p>Note: rich text editors often end up producing redundant markup, like nesting the same tag or empty tags (e.g. <code>&lt;b&gt;&lt;/b&gt;</code> and <code>&lt;b&gt;some &lt;b&gt;tex&lt;/b&gt;t&lt;/b&gt;</code>), which can cause issues when dealing with things like colour (e.g. old colours sticking around) and is just generally unpleasent.</p>
+		<p>To avoid this, this API cleans HTML to normalise these cases - but you have to first (before calling <code>toggleHTMLWrapping</code>) configure the tags it is allowed to clean.</p>
+		<p>This demo uses the following: <code>SelectionUtils.cleanableTags = ["B", "SPAN"];</code></p>
+		<p>You may also find it useful to use custom tags (e.g. <code>COLORED-TEXT</code>), just so that elements have semantic differences besides just their attributes, as this API only uses the tag name when toggling / cleaning tags, and thus if we were to add highlighting to our example, nested highlighting and colouring would be cleaned to detrimental effect.</p>
+		<h2 id="clearFormatting">Clear Formatting</h2>
+		<code>SelectionUtils.clearFormatting(element)</code>
+		<p>This removes all formatting from the selected text. Formatting is defined as any tags within the <code>SelectionUtils.cleanableTags</code> array (for more information about this, see the note in the section above). <code>element</code> is the element the selection must be in for formatting to get cleared.</p>
+		<p>The following button will clear formatting in the HTML Wrapping example. Try selecting some text, making it bold and colouring it, and then selecting a portion of it and clicking this button: <button onclick="SelectionUtils.clearFormatting(document.getElementById('rte1'))">Clear Formatting</button></p>
+		<h2 id="insertHTMLAtSelection">Insert HTML</h2>
+		<code>SelectionUtils.insertHTMLAtSelection(element, html)</code>
+		<p>This replaces the selected text / HTML with new text / HTML. In a contenteditable element without a selection, this method will add the new text / HTML at the text caret instead.</p>
+		<p><code>element</code> is the element which must contain the selection. <code>html</code> is the HTML to replace the selection with / insert at the caret.</p>
+		<p id="insertDemo">Try it out - select any text in this paragraph, and then click "Replace" to replace it with the contents of the input box below:</p>
+		<input type="text" value="REPLACEMENT" size="40"> <button onclick="SelectionUtils.insertHTMLAtSelection(document.getElementById('insertDemo'), this.previousElementSibling.value)">Replace</button>
+		<h2 id="events">Event Handling</h2>
+		<code>element.addEventListener("selected", ()=>{ ... })</code>
+		<p>This API defines a new event: <code>selected</code>. Whenever the selection is changed / removed, this is event is fired on the element which contains all of the selected text, and bubbles down the tree.</p>
+		<p>Most of the demos on this page have been using this event - e.g. the <code>getSelectedText</code> demo uses this to know when to re-call the function.</p>
+		<hr>
+		<script>
+			
+		SelectionUtils.cleanableTags = ["B", "SPAN"];	
+		
+		let savedSelection;
+		window.addEventListener("load", ()=>{
+			document.body.addEventListener("selected", ()=>{
+				setTimeout(()=>{runDemos();}, 100);
+			});
+			document.body.addEventListener("click", ()=>{
+				setTimeout(()=>{runDemos();}, 200);
+			});
+			runDemos();
+		});
+		
+		function runDemos() {
+			isAnythingSelectedDemo();
+			isSelectionWithinDemo();
+			getSelectionDemo();
+			getSelectedTextDemo();
+			getParentTagsDemo();
+		}
+		
+		function isAnythingSelectedDemo() {
+			let selInd = document.getElementById("selectionIndicator");
+			
+			if (SelectionUtils.isAnythingSelected()) {
+				selInd.innerHTML = "You have some text selected.";
+				selInd.style.color = "#0f0";
+			}
+			else {
+				selInd.innerHTML = "You do not have text selected.";
+				selInd.style.color = "#f00";
+			}
+		}
+		
+		function isSelectionWithinDemo() {
+			let selInd = document.getElementById("selectionIndicator2");
+			
+			if (SelectionUtils.isSelectionWithin(document.getElementById("isWithinPara"))) {
+				selInd.innerHTML = "Selection exclusively in the paragraph.";
+				selInd.style.color = "#0f0";
+			}
+			else {
+				selInd.innerHTML = "Selection not exclusively in the paragraph.";
+				selInd.style.color = "#f00";
+			}
+		}
+		
+		function getSelectionDemo() {
+			document.getElementById("getSelectionDemoOut").value = SelectionUtils.getSelectionPosition(document.getElementById("getSelectionDemoIn"));
+		}
+		
+		function getSelectedTextDemo() {
+			document.getElementById("getSelectedTextDemo").value = SelectionUtils.getSelectedText();
+		}
+		
+		function getParentTagsDemo() {
+			let value = "";
+			for (let node of SelectionUtils.getParentTags()) {
+				value += node.tagName + ", ";
+			}
+			document.getElementById("getParentTagsDemo").value = value.substring(0, value.length - 2);
+		}
+		
+		function restore() {
+			if (savedSelection == null || savedSelection.length == 0) return;
+			SelectionUtils.makeSelection(document.getElementById("restoreDemo"), savedSelection[0], savedSelection[1]);
+		}
+		</script>
+	</body>
+</html>
