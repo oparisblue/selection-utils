@@ -342,18 +342,39 @@ class SelectionUtils {
 	}
 	
 	/**
-	* Override the selected HTML with new HTML.
+	* Override the selected HTML with new content, either HTML or a new DOM node.
 	*/
-	static insertHTMLAtSelection(element, html) {
+	static insertAtSelection(element, toInsert) {
 		// Ensure that the selection is within the given element.
 		if (!SelectionUtils.isSelectionWithin(element, true)) return;
 		
 		let range = document.getSelection().getRangeAt(0);
-		range.deleteContents(); // Remove the existing contents
-		let node = document.createElement("SELECTION-DUMMY"); // Create a placeholder node to mark our place
-		range.insertNode(node); // Insert that into the DOM
-		node.insertAdjacentHTML("afterend", html); // Insert the HTML after it
-		node.remove(); // Remove the placeholder 
+		range.deleteContents(); // Remove the existing contents of the selection
+		// If we are inserting a DOM Node
+		if (toInsert.constructor == HTMLElement) {
+			range.insertNode(toInsert);
+		}
+		// Otherwise, if we are inserting a string
+		else if (toInsert.constructor == String) {
+			let node = document.createElement("SELECTION-DUMMY"); // Create a placeholder node to mark our place
+			range.insertNode(node); // Insert that into the DOM
+			node.insertAdjacentHTML("afterend", toInsert); // Insert the HTML after it
+			node.remove(); // Remove the placeholder 
+		}
+		else {
+			throw new Error("Element to insert must either be a DOM Node or a String containing HTML!");
+		}
+	}
+	
+	/**
+	* Select an entire DOM node.
+	*/
+	static selectDOMNode(node) {
+		let sel = document.getSelection();
+		sel.removeAllRanges();
+		let range = document.createRange();
+		range.selectNode(node);
+		sel.addRange(range);
 	}
 	
 	/**
