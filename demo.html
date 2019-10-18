@@ -46,7 +46,7 @@
 			<li><a href="#getParentTags">Get the tags surrounding a Selection</a></li>
 			<li><a href="#toggleHTMLWrapping">Wrap HTML around a Selection</a></li>
 			<li><a href="#clearFormatting">Clear Formatting</a></li>
-			<li><a href="#insertHTMLAtSelection">Insert HTML</a></li>
+			<li><a href="#insertAtSelection">Insert HTML</a></li>
 			<li><a href="#events">Event Handling</a></li>
 		</ul>
 		<h2 id="isAnythingSelected">Check if there is a Selection</h2>
@@ -68,6 +68,8 @@
 		<p>This method allows you to select text programmatically. <code>element</code> is the element to make the selection within. <code>firstPos</code> is the number of characters, from the start of the element, that you want the selection to start at. <code>secondPos</code> is the number of characters, from the start of the element, that you want the selection to end at.</p>
 		<p id="makeSelectionDemo">So, for example, to select the text "for example" at the beginning of this paragraph, we would say <code>SelectionUtils.makeSelection(paragraph, 4, 15)</code>. There are two quirks here: the first character is 0, not one, and the last character is actually not inclusive, so we need to add one at the end of <code>secondPos</code> count. Try it out by clicking this button: <button onclick="SelectionUtils.makeSelection(document.getElementById('makeSelectionDemo'), 4, 15)">Select "for example"</button></p>
 		<p>Note: with a contenteditable element, you can set the <code>firstPos</code> and <code>secondPos</code> arguments to the same value to move the caret.</p>
+		<code>SelectionUtils.selectDOMNode(node)</code>
+		<p>This is a secondary way to make selections. It selects the entirety of a given DOM node, <code>node</code>.</p>
 		<h2 id="getSelectionPosition">Get the position of an existing Selection</h2>
 		<code>SelectionUtils.getSelectionPosition(element)</code>
 		<p>This method gets the start and end points of a selection, in terms of number of characters from the start of the given element. It is the counterpart to the <code>makeSelection</code> method. It returns an array with two values, the first being the <code>firstPos</code> value (in terms of <code>makeSelection</code>), and the second being <code>secondPos</code>. If the array is empty, there is either no selection, or the selection is not exclusively within the given element.</p>
@@ -106,12 +108,12 @@
 		<code>SelectionUtils.clearFormatting(element)</code>
 		<p>This removes all formatting from the selected text. Formatting is defined as any tags within the <code>SelectionUtils.cleanableTags</code> array (for more information about this, see the note in the section above). <code>element</code> is the element the selection must be in for formatting to get cleared.</p>
 		<p>The following button will clear formatting in the HTML Wrapping example. Try selecting some text, making it bold and colouring it, and then selecting a portion of it and clicking this button: <button onclick="SelectionUtils.clearFormatting(document.getElementById('rte1'))">Clear Formatting</button></p>
-		<h2 id="insertHTMLAtSelection">Insert HTML</h2>
-		<code>SelectionUtils.insertHTMLAtSelection(element, html)</code>
+		<h2 id="insertAtSelection">Insert HTML</h2>
+		<code>SelectionUtils.insertAtSelection(element, toInsert)</code>
 		<p>This replaces the selected text / HTML with new text / HTML. In a contenteditable element without a selection, this method will add the new text / HTML at the text caret instead.</p>
-		<p><code>element</code> is the element which must contain the selection. <code>html</code> is the HTML to replace the selection with / insert at the caret.</p>
+		<p><code>element</code> is the element which must contain the selection. <code>toInsert</code> is new content to replace that at the existing selection / insert at the caret. It can either be a string containing HTML, or a DOM node (e.g. object created by <code>document.createElement()</code>).</p>
 		<p id="insertDemo">Try it out - select any text in this paragraph, and then click "Replace" to replace it with the contents of the input box below:</p>
-		<input type="text" value="REPLACEMENT" size="40"> <button onclick="SelectionUtils.insertHTMLAtSelection(document.getElementById('insertDemo'), this.previousElementSibling.value)">Replace</button>
+		<input type="text" value="REPLACEMENT" size="40"> <button onclick="SelectionUtils.insertAtSelection(document.getElementById('insertDemo'), this.previousElementSibling.value)">Replace</button>
 		<h2 id="events">Event Handling</h2>
 		<code>element.addEventListener("selected", ()=>{ ... })</code>
 		<p>This API defines a new event: <code>selected</code>. Whenever the selection is changed / removed, this is event is fired on the element which contains all of the selected text, and bubbles down the tree.</p>
