@@ -444,27 +444,38 @@ class SelectionUtils {
 		if (savedSelection.length == 0) return []; // Error checking all done in getSelectedPosition, if there is an error it will return an array with length 0 instead of length 2
 		
 		let currentHTML = element.innerHTML;
-		
-		// Wrap the selection with a tag
 		let range = document.getSelection().getRangeAt(0);
-		let dummy = document.createElement("SELECTION-DUMMY");
-		dummy.appendChild(range.extractContents());
-		range.insertNode(dummy);
+		let result = [0, 0, 0, 0];
 		
-		// Get the dimensions of that tag (every tag must be rectangular, so this matches the rectangle projection we want)
-		let rect = dummy.getBoundingClientRect();
-		let result = [
-			rect.left + window.scrollX,
-			rect.top + window.scrollY,
-			rect.left + rect.width + window.scrollX,
-			rect.top + rect.height + window.scrollY
-		];
+		// Insert a tag and get the start y position
+		let startDummy = document.createElement("SELECTION-DUMMY-ONE");
+		startDummy.innerHTML = "&#8203;"; // Zero-width space - without this, the first dummy will be positioned (0, 0) in the container if it is at the start of the line.
+		range.insertNode(startDummy);
+		result[1] = startDummy.getBoundingClientRect().top + window.scrollY;
 		
-		// Revert adding the tag
+		// Insert a tag and get the end y position
+		range.collapse(false);
+		let endDummy = document.createElement("SELECTION-DUMMY-TWO");
+		range.insertNode(endDummy);
+		let endRect = endDummy.getBoundingClientRect();
+		result[3] = endRect.top + endRect.height + window.scrollY;
+		
+		// Wrap a tag around the whole selection to get the width
+		startDummy.innerHTML = "";
+		SelectionUtils.makeSelection(element, savedSelection[0], savedSelection[1]);
+		range = document.getSelection().getRangeAt(0);
+		let widthDummy = document.createElement("SELECTION-DUMMY-THREE");
+		widthDummy.appendChild(range.extractContents());
+		range.insertNode(widthDummy);
+		let widthRect = widthDummy.getBoundingClientRect();
+		result[0] = widthRect.left + window.scrollX;
+		result[2] = widthRect.left + widthRect.width + window.scrollX;
+		
+		// Revert adding the dummy tags
 		element.innerHTML = currentHTML;
 		SelectionUtils.makeSelection(element, savedSelection[0], savedSelection[1]);
 		
-		return result;		
+		return result;
 	}
 	
 }
