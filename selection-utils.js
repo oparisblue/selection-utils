@@ -386,7 +386,7 @@ class SelectionUtils {
 		// Deal with cases like <b></b>
 		let html = element.innerHTML;
 		for (let tag of SelectionUtils.cleanableTags) { // Loop through all of the tags we are allowed to clean
-			html = element.innerHTML.replace(new RegExp(`<${tag}( [^>]*)?><\/${tag}>`, "gi"), ""); // Replace all cases where there is an empty pair of these tags (with any attributes) with nothing in-between.
+			html = html.replace(new RegExp(`<${tag}( [^>]*)?><\/${tag}>`, "gi"), ""); // Replace all cases where there is an empty pair of these tags (with any attributes) with nothing in-between.
 		}
 		element.innerHTML = html;
 		
@@ -402,9 +402,12 @@ class SelectionUtils {
 	static removeRedundantTags(element) {
 		// Nothing to do if this is a text node or not one of the tags we're allowed to clean.
 		if (element.nodeType == Node.TEXT_NODE || SelectionUtils.cleanableTags.indexOf(element.tagName.toUpperCase()) == -1) return;
-		// Otherwise, find every element with the same tag name inside this tag
+		// Recursively call this method on all of this element's children
+		for (let node of element.childNodes) {
+			SelectionUtils.removeRedundantTags(node);
+		}
+		// Find every element with the same tag name inside this tag
 		Array.from(element.getElementsByTagName(element.tagName)).forEach((child)=>{
-			SelectionUtils.removeRedundantTags(child); // Perform this process recursively on the child.
 			child.insertAdjacentHTML("afterend", child.innerHTML); // Duplicate all of the child's content immediantly after it.
 			child.remove(); // Remove the child, meaning that its duplicated content remains but it does not.
 		});
@@ -429,6 +432,39 @@ class SelectionUtils {
 			else result = result.concat(SelectionUtils.getAllTextNodes(node));
 		}
 		return result;
+	}
+	
+	/**
+	* Gets an array of 4 values [x1, y1, x2, y2], where (x1, y1) is the position of the top-left corner of the selected block (in pixels) and (x2, y2) is the position of the bottom-left corner of the selected block (in pixels).
+	*/
+	static getSelectionBoundingBox(element) {
+		
+		let savedSelection = SelectionUtils.getSelectionPosition(element);
+		
+		if (savedSelection.length == 0) return []; // Error checking all done in getSelectedPosition, if there is an error it will return an array with length 0 instead of length 2
+		
+		let currentHTML = element.innerHTML;
+		
+		// Wrap the selection with a tag
+		let range = document.getSelection().getRangeAt(0);
+		let dummy = document.createElement("SELECTION-DUMMY");
+		dummy.appendChild(range.extractContents());
+		range.insertNode(dummy);
+		
+		// Get the dimensions of that tag (every tag must be rectangular, so this matches the rectangle projection we want)
+		let rect = dummy.getBoundingClientRect();
+		let result = [
+			rect.left + window.scrollX,
+			rect.top + window.scrollY,
+			rect.left + rect.width + window.scrollX,
+			rect.top + rect.height + window.scrollY
+		];
+		
+		// Revert adding the tag
+		element.innerHTML = currentHTML;
+		SelectionUtils.makeSelection(element, savedSelection[0], savedSelection[1]);
+		
+		return result;		
 	}
 	
 }
