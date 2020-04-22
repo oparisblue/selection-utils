@@ -351,7 +351,7 @@ class SelectionUtils {
 		let range = document.getSelection().getRangeAt(0);
 		range.deleteContents(); // Remove the existing contents of the selection
 		// If we are inserting a DOM Node
-		if (toInsert.constructor == HTMLElement) {
+		if (toInsert instanceof HTMLElement) {
 			range.insertNode(toInsert);
 		}
 		// Otherwise, if we are inserting a string
